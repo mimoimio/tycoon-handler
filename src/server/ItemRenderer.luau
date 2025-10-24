@@ -29,7 +29,8 @@ local function Item(props: {
 				:GetPivot()
 				:ToWorldSpace(workspace.OriginalBase.RootArea:GetPivot():ToObjectSpace(model:GetPivot()))
 			button:PivotTo(cf)
-			button.Parent = workspace
+			button.Parent = workspace;
+			(button.Part.BillboardGui.TextLabel :: TextLabel).Text = props.ItemId
 			local touched = false
 			button.PrimaryPart.Touched:Connect(function(part: Part)
 				if not part.Name == "HumanoidRootPart" and part.Parent:FindFirstChild("Humanoid") or touched then
@@ -64,8 +65,37 @@ local function Item(props: {
 end
 
 local function ItemRenderer()
+	local players, setPlayers = useState(nil)
+	local cashes, setCashes = useState(nil)
 	local PlayerData, setPlayerData = useState(PDDummy)
 	local children = {}
+
+	useEffect(function()
+		game.Players.PlayerAdded:Connect(function(player)
+			setPlayers(game.Players:GetPlayers())
+		end)
+	end, {})
+
+	useEffect(function()
+		local cashesx = {}
+		for i, player in players do
+			local leaderstats = player:FindFirstChild("leaderstats")
+				or pcall(function()
+					local folder = Instance.new("Folder", player)
+					folder.Name = "leaderstats"
+					return folder
+				end)
+			local Cash = leaderstats:FindFirstChild("Cash")
+				or pcall(function()
+					local cashValue = Instance.new("IntValue", player)
+					cashValue.Name = "Cash"
+					return cashValue
+				end)
+			table.insert(cashesx)
+		end
+		setCashes(cashesx)
+		return
+	end, { players })
 
 	local function BuyButton(ItemId: string)
 		setPlayerData(function(prev)
@@ -79,13 +109,21 @@ local function ItemRenderer()
 		end)
 	end
 
-	for i, itemConfig in ICDummies do
+	local unowned = 0
+	for i, itemConfig in ipairs(ICDummies) do
+		warn(itemConfig.ItemId)
 		local unlocked = PlayerData.UnlockedItems[itemConfig.ItemId]
 		if not unlocked then
 			continue
 		end
 
 		local owned = PlayerData.OwnedItems[itemConfig.ItemId]
+		if not owned then
+			unowned += 1
+		end
+		if (unowned > 3) and not owned then
+			continue
+		end
 		children[itemConfig.ItemId] = e(Item, {
 			key = itemConfig.ItemId,
 			Owned = owned,

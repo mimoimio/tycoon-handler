@@ -6,4 +6,3 @@ local rootfolder = Instance.new("Folder", workspace)
 rootfolder.Name = "rootfolder"
 local root = ReactRoblox.createRoot(rootfolder)
 root:render(e("Folder", {}, e(require(script.ItemRenderer))))
-
